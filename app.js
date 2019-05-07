@@ -1,41 +1,46 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+var app = require('http').createServer(response);
+var fs = require('fs');
+var io = require('socket.io')(app);
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+app.listen(3000);
+console.log("App running...");
 
-var app = express();
+function response(req, res) {
+    var file = "";
+    if (req.url == "/") {
+        file = __dirname + '/index.html';
+    } else {
+        file = __dirname + req.url;
+    }
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
+    fs.readFile(file, function(err, data) {
+        if (err) {
+            res.writeHead(404);
+            return res.end('Page or file not found');
+        }
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+    res.writeHead(200);
+        res.end(data);
+    });
+}
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+io.on("connection", function(socket){
+    socket.on("send message", function(sent_msg, callback){
+		sent_msg = "[ " + getCurrentDate() + " ]: " + sent_msg;
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+		io.sockets.emit("update messages", sent_msg);
+		callback();
+    });
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+function getCurrentDate(){
+	var currentDate = new Date();
+	var day = (currentDate.getDate()<10 ? '0' : '') + currentDate.getDate();
+	var month = ((currentDate.getMonth() + 1)<10 ? '0' : '') + (currentDate.getMonth() + 1);
+	var year = currentDate.getFullYear();
+	var hour = (currentDate.getHours()<10 ? '0' : '') + currentDate.getHours();
+	var minute = (currentDate.getMinutes()<10 ? '0' : '') + currentDate.getMinutes();
+	var second = (currentDate.getSeconds()<10 ? '0' : '') + currentDate.getSeconds();
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
-
-module.exports = app;
+	return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
+}
