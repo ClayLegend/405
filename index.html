@@ -1,32 +1,59 @@
 <!DOCTYPE html>
 <html>
+
 <head>
- <title>ChatJS</title>
- <link rel="stylesheet" type="text/css" href="/css/style.css" />
+    <title>ClayChat</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
+<style>
+	#messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+</style>
+</head>
+
+<body>
+    <div id="history"></div>
+    <form id="chat">
+	
+        <input type="text" id="msg_text" name="msg_text" />
+        <input type="submit" value="Send!" />
+    </form>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+        var socket = io.connect();
+        $("form#chat").submit(function(e) {
+            e.preventDefault();
+            socket.emit("send message", $(this).find("#msg_text").val(), function() {
+                $("form#chat #msg_text").val("");
+            });
+        });
+		socket.on("update messages", function(msg){
+		var final_message = $("<p />").text(msg);
+		   $("#history").append(final_message);
+		});
+</script>
 </head>
 <body>
- <div id="history"></div>
- <form id="chat">
- <input type="text" id="msg_text" name="msg_text" />
- <input type="submit" value="Send!" /> 
- </form>
 
- <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
- <script type="text/javascript" src="/socket.io/socket.io.js"></script>
- <script type="text/javascript">
- var socket = io.connect();
- $("form#chat").submit(function(e) {
-   e.preventDefault();
- 
-   socket.emit("send message", $(this).find("#msg_text").val(), function() {
-     $("form#chat #msg_text").val("");
-   });
- });
-
-	socket.on("update messages", function(msg){
-	var final_message = $("<p />").text(msg);
-	$("#history").append(final_message);
-		});
- </script>
+    <ul id="messages"></ul>
+    </form>
+    <script>
+            var socket = io.connect('http://localhost:3000');
+            // submit text message without reload/refresh the page
+          
+            // append the chat text message
+		socket.on('chat_message', function(msg){
+                $('#messages').append($('<li>').html(msg));
+            });
+           
+            // append text if someone is online
+            socket.on('is_online', function(username) {
+                $('#messages').append($('<li>').html(username));
+            });
+            // ask username
+            var username = prompt('Enter a Username');
+            socket.emit('username', username);
+</script>
 </body>
 </html>
